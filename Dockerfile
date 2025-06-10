@@ -16,6 +16,13 @@ RUN apt-get update && apt-get install -y \
     curl \
     git \
     ca-certificates \
+    libffi-dev \
+    libssl-dev \
+    pkg-config \
+    libsodium-dev \
+    python3-dev \
+    rustc \
+    cargo \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
@@ -23,18 +30,15 @@ RUN useradd -m -u 1000 pumpbot && \
     mkdir -p /app/logs /app/wallets /app/config && \
     chown -R pumpbot:pumpbot /app
 
-# Copy requirements first for better caching
-COPY requirements.txt pyproject.toml* ./
+# Copy pyproject.toml and README.md first for better caching
+COPY pyproject.toml README.md ./
 
 # Install uv for faster dependency management
-RUN pip install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
 
-# Install Python dependencies using uv (much faster than pip)
-RUN if [ -f pyproject.toml ]; then \
-        uv pip install --system -e .; \
-    else \
-        uv pip install --system -r requirements.txt; \
-    fi
+# Install Python dependencies using uv with pyproject.toml
+RUN /root/.local/bin/uv pip install --system .
 
 # Copy application code
 COPY src/ ./src/
