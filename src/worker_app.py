@@ -224,9 +224,12 @@ class WorkerApp:
                 timeout=30
             )
             
-            # Проверка подключения
-            await self.solana_client.get_health()
-            self.logger.info(f"🔗 Solana клиент подключен: {rpc_urls[0]}")
+            # Проверка подключения через получение последнего блока
+            response = await self.solana_client.get_latest_blockhash()
+            if response.value:
+                self.logger.info(f"🔗 Solana клиент подключен: {rpc_urls[0]}")
+            else:
+                raise ValueError("Не удалось получить последний блок")
             
         except Exception as e:
             raise ValueError(f"Ошибка подключения к Solana: {e}")
@@ -572,8 +575,11 @@ class WorkerApp:
         try:
             # Проверка Solana клиента
             if self.solana_client:
-                await self.solana_client.get_health()
-                health["solana_client"] = "healthy"
+                response = await self.solana_client.get_latest_blockhash()
+                if response.value:
+                    health["solana_client"] = "healthy"
+                else:
+                    health["solana_client"] = "unhealthy"
         except:
             health["solana_client"] = "unhealthy"
         
